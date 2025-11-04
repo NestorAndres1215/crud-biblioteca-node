@@ -1,67 +1,61 @@
-const Autor =require ('../na_models/Autor')
-//metodo listar datos
-module.exports.listar = (req, res) => {
-    Autor.find({}, (error, autores) => {
-        if (error) {
-            return res.status(500).json({
-                message: 'Error de esquema de datos'
-            })
-        }
-        console.log(autores)
-        return res.render('autor', { autores: autores })
-    })
-}
-//metodo para registrar datos 
-module.exports.insertar= (req, res) =>
-{
-    const autor = new Autor ({
-     
-        idAutor: req.body.aut,
-        nombre: req.body.nom,
-        apellido: req.body.ape,
-        pais: req.body.pa,
-       
-    })
-    autor.save(function(error, autor)
-    {
-        if(error)
-        {
-            return res.status(500).json({
-                message: 'Error al insertar'
-            })   
-        }
-        res.redirect('/autor')
-    })
-}
-//metodo de editar
-module.exports.editar = (req,res) => {
-    const id = req.body.e_id;
-    const idAutor = req.body.e_aut;
-    const nombre = req.body.e_nom;
-    const apellido =req.body.e_ape;
-    const pais =req.body.e_pa;
+const Autor = require('../na_models/Autor');
+const MENSAJES = require('../util/mensajes');
 
+// Listar autores
+module.exports.listar = async (req, res) => {
+    try {
+        const autores = await Autor.find({});
+        res.render('autor', { autores });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: MENSAJES.AUTOR.LISTAR_ERROR });
+    }
+};
 
-    Autor.findByIdAndUpdate(id, {idAutor, nombre,apellido,pais}, (error,Autor) => {
-        if (error)
-        {
-            return res.status(500).json({
-                message: 'Error al actualizar'
-            })
+// Insertar nuevo autor
+module.exports.insertar = async (req, res) => {
+    try {
+        const { aut: idAutor, nom: nombre, ape: apellido, pa: pais } = req.body;
+
+        if (!idAutor || !nombre || !apellido || !pais) {
+            return res.status(400).json({ message: MENSAJES.AUTOR.VALIDACION });
         }
-        res.redirect('/autor')
-    })
-   
-} 
-// metodo eliminar
-module.exports.eliminar = (req,res) => {
-    const id = req.params.id
-    Autor.findByIdAndRemove(id,(error,autor) => {
-        if(error){
-            return res.status(500).json({
-                message: 'Error al eliminar'
-            })
-        }
-        res.redirect('/autor')
-    })
-}
+
+        const autor = new Autor({ idAutor, nombre, apellido, pais });
+        await autor.save();
+        res.redirect('/autor');
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: MENSAJES.AUTOR.INSERTAR_ERROR });
+    }
+};
+
+// Editar autor
+module.exports.editar = async (req, res) => {
+    try {
+        const { e_id: id, e_aut: idAutor, e_nom: nombre, e_ape: apellido, e_pa: pais } = req.body;
+
+        if (!id) return res.status(400).json({ message: MENSAJES.AUTOR.VALIDACION });
+
+        await Autor.findByIdAndUpdate(id, { idAutor, nombre, apellido, pais });
+        res.redirect('/autor');
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: MENSAJES.AUTOR.ACTUALIZAR_ERROR });
+    }
+};
+
+// Eliminar autor
+module.exports.eliminar = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) return res.status(400).json({ message: MENSAJES.AUTOR.VALIDACION });
+
+        await Autor.findByIdAndRemove(id);
+        res.redirect('/autor');
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: MENSAJES.AUTOR.ELIMINAR_ERROR });
+    }
+};

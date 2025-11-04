@@ -1,63 +1,62 @@
 const Editorial =require ('../na_models/Editorial')
-//metodo listar datos
-module.exports.listar = (req, res) => {
-    Editorial.find({}, (error, editoriales) => {
-        if (error) {
-            return res.status(500).json({
-                message: 'Error de esquema de datos'
-            })
-        }
-        console.log(editoriales)
-        return res.render('editorial', { editoriales: editoriales })
-    })
-}
-//metodo para registrar datos 
-module.exports.insertar= (req, res) =>
-{
-    const editorial = new Editorial ({
-     
-        idEditorial: req.body.codi,
-        editorial: req.body.edit,
-       
-    })
-    editorial.save(function(error, editorial)
-    {
-        if(error)
-        {
-            return res.status(500).json({
-                message: 'Error al insertar'
-            })   
-        }
-        res.redirect('/editorial')
-    })
-}
-//metodo de editar
-module.exports.editar = (req,res) => {
-    const id = req.body.e_id;
-    const idEditorial = req.body.e_edi;
-    const editorial = req.body.e_edit;
+const MENSAJES = require('../util/mensajes');
+// Listar editoriales
+module.exports.listar = async (req, res) => {
+  try {
+    const editoriales = await Editorial.find({});
+    res.render('editorial', { editoriales });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: MENSAJES.EDITORIAL.LISTAR_ERROR });
+  }
+};
 
+// Insertar nueva editorial
+module.exports.insertar = async (req, res) => {
+  try {
+    const { codi: idEditorial, edit: editorial } = req.body;
 
-    Editorial.findByIdAndUpdate(id, {idEditorial, editorial}, (error,editorial) => {
-        if (error)
-        {
-            return res.status(500).json({
-                message: 'Error al actualizar'
-            })
-        }
-        res.redirect('/editorial')
-    })
-   
-} 
-// metodo eliminar
-module.exports.eliminar = (req,res) => {
-    const id = req.params.id
-    Editorial.findByIdAndRemove(id,(error,editorial) => {
-        if(error){
-            return res.status(500).json({
-                message: 'Error al eliminar'
-            })
-        }
-        res.redirect('/editorial')
-    })
-}
+    if (!idEditorial || !editorial) {
+      return res.status(400).json({ message: MENSAJES.EDITORIAL.VALIDACION });
+    }
+
+    const nuevaEditorial = new Editorial({ idEditorial, editorial });
+    await nuevaEditorial.save();
+    res.redirect('/editorial');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: MENSAJES.EDITORIAL.INSERTAR_ERROR });
+  }
+};
+
+// Editar editorial
+module.exports.editar = async (req, res) => {
+  try {
+    const { e_id: id, e_edi: idEditorial, e_edit: editorial } = req.body;
+
+    if (!id || !idEditorial || !editorial) {
+      return res.status(400).json({ message: MENSAJES.EDITORIAL.VALIDACION });
+    }
+
+    await Editorial.findByIdAndUpdate(id, { idEditorial, editorial });
+    res.redirect('/editorial');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: MENSAJES.EDITORIAL.ACTUALIZAR_ERROR });
+  }
+};
+
+// Eliminar editorial
+module.exports.eliminar = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) return res.status(400).json({ message: MENSAJES.EDITORIAL.VALIDACION });
+
+    await Editorial.findByIdAndRemove(id);
+    res.redirect('/editorial');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: MENSAJES.EDITORIAL.ELIMINAR_ERROR });
+  }
+};
